@@ -11,7 +11,7 @@
         "fmt": "pnpm format"
     },
     "devDependencies": {
-        "@actions/core": "^1.11.1",
+        "@actions/core": "^3.0.1",
         "@types/node": "^26.6.5",
         "@types/sarif": "^2.1.7",
         "prettier": "^3.5.2",
