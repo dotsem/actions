@@ -1,0 +1,21 @@
+name: Build node
+description: Builds node production bundle via pnpm
+
+inputs:
+  working-directory:
+    description: "Directory to run the action in"
+    default: "."
+  script:
+    description: "Build script name defined in package.json"
+    default: "build"
+  args:
+    description: "Additional arguments to pass to the build script"
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Build node
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: pnpm run ${{ inputs.script }} ${{ inputs.args }}

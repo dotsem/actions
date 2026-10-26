@@ -1,0 +1,42 @@
+name: Test actions
+
+on:
+  pull_request:
+    branches: ["*"]
+    paths-ignore:
+      - "**.md"
+  push:
+    branches: ["main"]
+    paths-ignore:
+      - "**.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-actions-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  test-node-actions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Test setup-node
+        uses: ./setup-node
+        with:
+          node-version: "22"
+          working-directory: tests/fixtures/node
+
+      - name: Verify toolchain binaries
+        shell: bash
+        run: |
+          node -v
+          pnpm -v
+
+      - name: Test build-node
+        uses: ./build-node
+        with:
+          working-directory: tests/fixtures/node
