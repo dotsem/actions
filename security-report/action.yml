@@ -1,5 +1,5 @@
 name: Security Report
-description: Parses SARIF report, appends summary with badge to job summary, upserts sticky PR comment, and uploads artifact
+description: Parses SARIF report, appends summary with badge to job summary, upserts sticky PR comment, and manages automated issue tracking
 
 inputs:
   title:
@@ -25,10 +25,6 @@ inputs:
     description: Whether to fail the workflow if security findings are detected
     required: false
     default: "false"
-  upload-artifact:
-    description: Whether to upload the SARIF report as a workflow artifact
-    required: false
-    default: "true"
   manage-issue:
     description: Whether to create, update, or close an automated GitHub Issue
     required: false
