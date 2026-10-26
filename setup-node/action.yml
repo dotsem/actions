@@ -1,0 +1,35 @@
+name: Setup Node & pnpm deps
+description: Sets up pnpm, Node.js, and installs dependencies
+
+inputs:
+  node-version:
+    description: "Node.js version"
+    default: "22"
+  pnpm-version:
+    description: "pnpm version"
+    default: ""
+  working-directory:
+    description: "Directory to run the action in"
+    default: "."
+  cache-dependency-path:
+    description: "Explicit path to lockfile for cache hashing"
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      with:
+        version: ${{ inputs.pnpm-version }}
+        package_json_file: ${{ inputs.working-directory }}/package.json
+
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
+        cache-dependency-path: ${{ inputs.cache-dependency-path != '' && inputs.cache-dependency-path || format('{0}/pnpm-lock.yaml', inputs.working-directory) }}
+
+    - name: Install deps
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: pnpm install --frozen-lockfile
