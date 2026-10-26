@@ -7,7 +7,8 @@
     "scripts": {
         "build": "tsup",
         "check-types": "tsc --noEmit",
-        "format": "prettier --write ."
+        "format": "prettier --write .",
+        "fmt": "pnpm format"
     },
     "devDependencies": {
         "@actions/core": "^1.11.1",
