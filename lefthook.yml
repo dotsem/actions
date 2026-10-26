@@ -5,3 +5,7 @@ pre-commit:
       run: pnpm prettier --write {staged_files}
       stage_fixed: true
       glob: "**/*.{js,ts}"
+
+    - name: build
+      run: pnpm build && git add "**/dist/**"
+      glob: "**/src/**"
