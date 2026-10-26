@@ -49,4 +49,51 @@ Runs a production build command using PNPM in the specified directory.
     args: "--filter=web"
 ```
 
+### Security Report (`security-report`)
+
+Parses SARIF output, appends a detailed markdown summary with badge to the GitHub Actions Job Summary, upserts a sticky PR comment, manages automated issue tracking, and uploads the raw report as an artifact.
+
+#### Permissions Required
+
+```yaml
+permissions:
+  contents: read
+  pull-requests: write # for sticky PR comments
+  issues: write        # for automated issue management
+```
+
+#### Inputs
+
+| Name | Description | Required | Default |
+| :--- | :--- | :--- | :--- |
+| `sarif-file` | Path to SARIF output file | Yes | - |
+| `title` | Header title in report | No | `"Security Scan Report"` |
+| `comment-tag` | Identifier tag for sticky PR comments & issue markers | No | `"security-report"` |
+| `badge-label` | Label text for shields.io badge | No | `"Security"` |
+| `github-token` | Token with PR and issues write permissions | No | `${{ github.token }}` |
+| `fail-on-findings` | Fail step if findings are detected | No | `"false"` |
+| `upload-artifact` | Upload SARIF report as workflow artifact | No | `"true"` |
+| `manage-issue` | Create/update/close tracked GitHub issue | No | `"false"` |
+| `issue-title` | Title of automated GitHub issue | No | `"[Security Audit] Active Vulnerabilities Detected"` |
+
+#### Outputs
+
+| Name | Description |
+| :--- | :--- |
+| `total-findings` | Total number of non-suppressed findings detected |
+| `report-file` | Path to the generated Markdown report file |
+
+#### Usage
+
+```yaml
+- name: Report Trivy Results
+  uses: dotsem/actions/security-report@main
+  if: always() && hashFiles('trivy.sarif') != ''
+  with:
+    title: "Trivy Vulnerability Report"
+    sarif-file: "trivy.sarif"
+    comment-tag: "trivy"
+    fail-on-findings: "true"
+```
+
 ## Workflows

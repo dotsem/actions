@@ -1,0 +1,5 @@
+packages:
+  - "security-report"
+
+allowBuilds:
+  esbuild: true
