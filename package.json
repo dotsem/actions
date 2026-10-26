@@ -12,10 +12,10 @@
     },
     "devDependencies": {
         "@actions/core": "^1.11.1",
-        "@types/node": "^24.0.0",
+        "@types/node": "^26.6.5",
         "@types/sarif": "^2.1.7",
         "prettier": "^3.5.2",
-        "tsup": "^8.3.6",
-        "typescript": "^5.7.3"
+        "tsup": "^9.0.0",
+        "typescript": "^7.0.2"
     }
 }
