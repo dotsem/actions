@@ -40,3 +40,45 @@ jobs:
         uses: ./build-node
         with:
           working-directory: tests/fixtures/node
+
+  test-security-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # First test if a clean report with no findings works as expected
+      - name: Run security-report with clean fixture
+        id: report-clean
+        uses: ./security-report
+        with:
+          title: "Clean Security Report"
+          sarif-file: "tests/fixtures/clean.sarif"
+          comment-tag: "test-clean"
+          fail-on-findings: "true"
+      - name: Assert clean outputs
+        shell: bash
+        run: |
+          if [ "${{ steps.report-clean.outputs.total-findings }}" -ne 0 ]; then
+            echo "Expected 0 findings, got ${{ steps.report-clean.outputs.total-findings }}"
+            exit 1
+          fi
+          grep -q "Passed ✅" "${{ steps.report-clean.outputs.report-file }}"
+
+      # Then test if a report with vulns is working
+      - name: Run security-report with dirty fixture
+        id: report
+        uses: ./security-report
+        with:
+          title: "Dirty Security Report"
+          sarif-file: "tests/fixtures/sample.sarif"
+          comment-tag: "test-report"
+          fail-on-findings: "false"
+
+      - name: Assert dirty outputs
+        shell: bash
+        run: |
+          if [ "${{ steps.report.outputs.total-findings }}" -ne 2 ]; then
+            echo "Expected 2 findings, got ${{ steps.report.outputs.total-findings }}"
+            exit 1
+          fi
+          test -f "${{ steps.report.outputs.report-file }}"

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Trivy Test Mock",
+          "rules": [
+            {
+              "id": "CVE-2026-0001",
+              "name": "MockCriticalVulnerability",
+              "defaultConfiguration": { "level": "error" }
+            },
+            {
+              "id": "CVE-2026-0002",
+              "name": "MockWarningVulnerability",
+              "defaultConfiguration": { "level": "warning" }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "CVE-2026-0001",
+          "level": "error",
+          "message": { "text": "Critical vulnerability detected in dependency" },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "package.json" },
+                "region": { "startLine": 14 }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "CVE-2026-0002",
+          "level": "warning",
+          "message": { "text": "Medium severity configuration warning" },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "Dockerfile" },
+                "region": { "startLine": 1 }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
