@@ -66,19 +66,19 @@ jobs:
 
       # Then test if a report with vulns is working
       - name: Run security-report with dirty fixture
-        id: report
+        id: report-dirty
         uses: ./security-report
         with:
           title: "Dirty Security Report"
-          sarif-file: "tests/fixtures/sample.sarif"
+          sarif-file: "tests/fixtures/dirty.sarif"
           comment-tag: "test-report"
           fail-on-findings: "false"
 
       - name: Assert dirty outputs
         shell: bash
         run: |
-          if [ "${{ steps.report.outputs.total-findings }}" -ne 2 ]; then
-            echo "Expected 2 findings, got ${{ steps.report.outputs.total-findings }}"
+          if [ "${{ steps.report-dirty.outputs.total-findings }}" -ne 2 ]; then
+            echo "Expected 2 findings, got ${{ steps.report-dirty.outputs.total-findings }}"
             exit 1
           fi
-          test -f "${{ steps.report.outputs.report-file }}"
+          test -f "${{ steps.report-dirty.outputs.report-file }}"
