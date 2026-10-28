@@ -1,0 +1,43 @@
+name: Release & Tag Management
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+concurrency:
+  group: release-tag-management
+  cancel-in-progress: false
+
+jobs:
+  update-floating-tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Update Floating Tag
+        run: |
+          # We skip pre-releases
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            echo "Skipping floating tag update for pre-release: $GITHUB_REF_NAME"
+            exit 0
+          fi
+
+          VERSION="${GITHUB_REF_NAME#v}"
+          MAJOR="${VERSION%%.*}"
+          REST="${VERSION#*.}"
+          MINOR="${REST%%.*}"
+
+          # For 0.x (alpha), float v0.1. For 1.x+, float v1.
+          if [ "$MAJOR" = "0" ]; then
+            TARGET_TAG="v0.${MINOR}"
+          else
+            TARGET_TAG="v${MAJOR}"
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -fa "${TARGET_TAG}" -m "Update ${TARGET_TAG} to ${GITHUB_REF_NAME}"
+          git push origin "${TARGET_TAG}" --force
