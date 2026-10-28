@@ -15,6 +15,9 @@ on:
       upload-artifact:
         type: boolean
         default: true
+      manage-issue:
+        type: boolean
+        default: false
     secrets:
       token:
         description: "GitHub token with pull-requests and issues write permissions"
@@ -53,6 +56,7 @@ jobs:
           title: "Trivy Vulnerability Report"
           sarif-file: "trivy.sarif"
           comment-tag: "trivy-audit"
+          manage-issue: ${{ inputs.manage-issue }}
           fail-on-findings: ${{ inputs.fail-on-findings }}
           github-token: ${{ secrets.token || github.token }}
 
