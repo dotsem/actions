@@ -1,0 +1,65 @@
+name: Trivy Security Audit
+
+on:
+  workflow_call:
+    inputs:
+      scan-type:
+        type: string
+        default: "fs"
+      severity:
+        type: string
+        default: "CRITICAL,HIGH,MEDIUM"
+      fail-on-findings:
+        type: boolean
+        default: false
+      upload-artifact:
+        type: boolean
+        default: true
+    secrets:
+      token:
+        description: "GitHub token with pull-requests and issues write permissions"
+        required: false
+
+jobs:
+  trivy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Run Trivy Scanner
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: ${{ inputs.scan-type }}
+          format: "sarif"
+          output: "trivy.sarif"
+          severity: ${{ inputs.severity }}
+
+      - name: Checkout dotsem/actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: always() && hashFiles('trivy.sarif') != ''
+        with:
+          repository: dotsem/actions
+          ref: main
+          path: .dotsem-actions
+
+      - name: Report Trivy Results
+        uses: ./.dotsem-actions/security-report
+        if: always() && hashFiles('trivy.sarif') != ''
+        with:
+          title: "Trivy Vulnerability Report"
+          sarif-file: "trivy.sarif"
+          comment-tag: "trivy-audit"
+          fail-on-findings: ${{ inputs.fail-on-findings }}
+          github-token: ${{ secrets.token || github.token }}
+
+      - name: Upload SARIF Artifact
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        if: always() && inputs.upload-artifact && hashFiles('trivy.sarif') != ''
+        with:
+          name: trivy-sarif
+          path: "trivy.sarif"
+          retention-days: 30
