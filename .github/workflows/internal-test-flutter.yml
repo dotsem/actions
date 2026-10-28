@@ -1,0 +1,52 @@
+name: Test Flutter Action
+
+on:
+  pull_request:
+    paths:
+      - "build-flutter/**"
+      - ".github/workflows/flutter-*.yml"
+      - ".github/workflows/internal-test-flutter.yml"
+      - "tests/fixtures/flutter/**"
+  push:
+    branches: [main]
+    paths:
+      - "build-flutter/**"
+      - ".github/workflows/flutter-*.yml"
+      - ".github/workflows/internal-test-flutter.yml"
+      - "tests/fixtures/flutter/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-flutter-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  test-build-flutter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Test build-flutter (linux)
+        id: build-app
+        uses: ./build-flutter
+        with:
+          target: "linux"
+          working-directory: "tests/fixtures/flutter"
+
+      - name: Assert build artifacts and outputs
+        shell: bash
+        run: |
+          test -f "tests/fixtures/flutter/dist/test_app-linux.tar.gz"
+          tar -tzf "tests/fixtures/flutter/dist/test_app-linux.tar.gz" > /dev/null
+          if [ "${{ steps.build-app.outputs.artifact-name }}" != "test_app-linux" ]; then
+            echo "Expected artifact-name 'test_app-linux', got '${{ steps.build-app.outputs.artifact-name }}'"
+            exit 1
+          fi
+          if [ "${{ steps.build-app.outputs.artifact-path }}" != "tests/fixtures/flutter/dist/*" ]; then
+            echo "Expected artifact-path 'tests/fixtures/flutter/dist/*', got '${{ steps.build-app.outputs.artifact-path }}'"
+            exit 1
+          fi
+          echo "Verified test_app-linux.tar.gz exists, is valid tarball, and outputs match"
