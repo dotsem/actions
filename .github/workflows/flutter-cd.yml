@@ -1,0 +1,84 @@
+name: Flutter CD
+
+on:
+  workflow_call:
+    inputs:
+      targets:
+        description: 'JSON array of targets to build and release (e.g. ''["linux", "windows", "macos"]'')'
+        required: true
+        type: string
+      tag:
+        description: "Release tag (optional, defaults to release event or ref)"
+        required: false
+        type: string
+      flutter-version:
+        description: "Flutter SDK version"
+        required: false
+        type: string
+        default: "3.47.1"
+      working-directory:
+        description: "Working directory containing pubspec.yaml"
+        required: false
+        type: string
+        default: "."
+      android-format:
+        description: "Android artifact format: apk, aab, or both"
+        required: false
+        type: string
+        default: "apk"
+    secrets:
+      token:
+        description: "GitHub token with contents:write permission (defaults to github.token)"
+        required: false
+
+concurrency:
+  group: flutter-cd-${{ inputs.tag || github.event.release.tag_name || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  setup-matrix:
+    name: Resolve Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        shell: bash
+        env:
+          TARGETS_INPUT: ${{ inputs.targets }}
+        run: |
+          if [ -z "$TARGETS_INPUT" ]; then
+            echo "::error::Input 'targets' must not be empty"
+            exit 1
+          fi
+          echo "matrix=$(echo "$TARGETS_INPUT" | jq -c '[.[] | {target: ., os: (if . == "windows" then "windows-latest" elif . == "macos" or . == "ios" then "macos-latest" else "ubuntu-latest" end)}]')" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build & Upload (${{ matrix.target }})
+    needs: [setup-matrix]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build App
+        id: build
+        # nosemgrep: yaml.github-actions.security.unpinned-action.unpinned-action
+        uses: dotsem/actions/build-flutter@v0
+        with:
+          target: ${{ matrix.target }}
+          flutter-version: ${{ inputs.flutter-version }}
+          working-directory: ${{ inputs.working-directory }}
+          android-format: ${{ inputs.android-format }}
+      - name: Upload binary to release
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2.11.5
+        with:
+          repo_token: ${{ secrets.token || secrets.GITHUB_TOKEN }}
+          file: ${{ steps.build.outputs.artifact-path }}
+          file_glob: true
+          tag: ${{ inputs.tag || github.event.release.tag_name || github.ref_name }}
+          overwrite: true

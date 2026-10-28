@@ -1,0 +1,127 @@
+name: Flutter CI
+
+on:
+  workflow_call:
+    inputs:
+      targets:
+        description: 'JSON array of build targets to compile (e.g. ''["linux"]'')'
+        required: false
+        type: string
+        default: ""
+      pr-targets:
+        description: 'JSON array of targets to compile on pull_request (e.g. ''["linux"]'')'
+        required: false
+        type: string
+        default: ""
+      push-targets:
+        description: 'JSON array of targets to compile on push / other events (e.g. ''["linux", "windows", "macos"]'')'
+        required: false
+        type: string
+        default: ""
+      flutter-version:
+        description: "Flutter SDK version"
+        required: false
+        type: string
+        default: "3.47.1"
+      working-directory:
+        description: "Working directory containing pubspec.yaml"
+        required: false
+        type: string
+        default: "."
+      android-format:
+        description: "Android artifact format when android target is included: apk, aab, or both"
+        required: false
+        type: string
+        default: "apk"
+      concurrency-tests:
+        description: "Concurrency level for flutter test"
+        required: false
+        type: number
+        default: 4
+
+jobs:
+  setup-matrix:
+    name: Resolve Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        shell: bash
+        env:
+          TARGETS_INPUT: ${{ inputs.targets }}
+          PR_TARGETS_INPUT: ${{ inputs.pr-targets }}
+          PUSH_TARGETS_INPUT: ${{ inputs.push-targets }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          TARGETS_JSON="$TARGETS_INPUT"
+          if [ -z "$TARGETS_JSON" ]; then
+            if [ "$EVENT_NAME" = "pull_request" ]; then
+              TARGETS_JSON="$PR_TARGETS_INPUT"
+            else
+              TARGETS_JSON="$PUSH_TARGETS_INPUT"
+            fi
+          fi
+
+          if [ -z "$TARGETS_JSON" ]; then
+            echo "::error::Must provide either 'targets' or 'pr-targets' and 'push-targets'"
+            exit 1
+          fi
+
+          echo "matrix=$(echo "$TARGETS_JSON" | jq -c '[.[] | {target: ., os: (if . == "windows" then "windows-latest" elif . == "macos" or . == "ios" then "macos-latest" else "ubuntu-latest" end)}]')" >> "$GITHUB_OUTPUT"
+
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: ${{ inputs.flutter-version }}
+          channel: "stable"
+          cache: true
+      - run: flutter pub get
+        working-directory: ${{ inputs.working-directory }}
+      - run: flutter analyze
+        working-directory: ${{ inputs.working-directory }}
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: ${{ inputs.flutter-version }}
+          channel: "stable"
+          cache: true
+      - run: flutter pub get
+        working-directory: ${{ inputs.working-directory }}
+      - run: flutter test --concurrency=${{ inputs.concurrency-tests }}
+        working-directory: ${{ inputs.working-directory }}
+
+  build:
+    name: Build (${{ matrix.target }})
+    needs: [setup-matrix, analyze, test]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build App
+        id: build
+        # nosemgrep: yaml.github-actions.security.unpinned-action.unpinned-action
+        uses: dotsem/actions/build-flutter@v0
+        with:
+          target: ${{ matrix.target }}
+          flutter-version: ${{ inputs.flutter-version }}
+          working-directory: ${{ inputs.working-directory }}
+          android-format: ${{ inputs.android-format }}
+      - name: Upload build artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ steps.build.outputs.artifact-name }}
+          path: ${{ steps.build.outputs.artifact-path }}
+          retention-days: 7
