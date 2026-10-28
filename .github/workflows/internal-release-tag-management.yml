@@ -30,14 +30,14 @@ jobs:
           REST="${VERSION#*.}"
           MINOR="${REST%%.*}"
 
-          # For 0.x (alpha), float v0.1. For 1.x+, float v1.
-          if [ "$MAJOR" = "0" ]; then
-            TARGET_TAG="v0.${MINOR}"
-          else
-            TARGET_TAG="v${MAJOR}"
-          fi
-
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -fa "${TARGET_TAG}" -m "Update ${TARGET_TAG} to ${GITHUB_REF_NAME}"
-          git push origin "${TARGET_TAG}" --force
+
+          git tag -fa "v${MAJOR}" -m "Update v${MAJOR} to ${GITHUB_REF_NAME}"
+          git push origin "v${MAJOR}" --force
+
+          # float minor tag during 0.x for callers wanting minor isolation
+          if [ "$MAJOR" = "0" ]; then
+            git tag -fa "v0.${MINOR}" -m "Update v0.${MINOR} to ${GITHUB_REF_NAME}"
+            git push origin "v0.${MINOR}" --force
+          fi
