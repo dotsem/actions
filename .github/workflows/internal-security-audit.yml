@@ -1,0 +1,30 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+  schedule:
+    - cron: "0 4 * * 4"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  audit:
+    uses: ./.github/workflows/trivy-audit.yml
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    with:
+      severity: "CRITICAL,HIGH,MEDIUM"
+      fail-on-findings: false
+      manage-issue: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
