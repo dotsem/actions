@@ -110,6 +110,7 @@ Sets up Flutter, automatically resolves app metadata from `pubspec.yaml`, instal
 | `cache`             | Cache Flutter SDK artifacts                                       | No       | `"true"`   |
 | `working-directory` | Directory containing `pubspec.yaml`                               | No       | `"."`      |
 | `android-format`    | Artifact format when targeting Android (`apk`, `aab`, or `both`)  | No       | `"apk"`    |
+| `build-mode`        | Build compilation mode: `debug`, `profile`, or `release`          | No       | `"release"`|
 
 *Note: Selecting 'both' will upload both APK & AAB as individual release assets.*
 

@@ -26,27 +26,35 @@ concurrency:
 jobs:
   test-build-flutter:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - build-mode: "release"
+            expected-suffix: ""
+          - build-mode: "debug"
+            expected-suffix: "-debug"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Test build-flutter (linux)
+      - name: Test build-flutter (${{ matrix.build-mode }})
         id: build-app
         uses: ./build-flutter
         with:
           target: "linux"
+          build-mode: ${{ matrix.build-mode }}
           working-directory: "tests/fixtures/flutter"
-
       - name: Assert build artifacts and outputs
         shell: bash
+        env:
+          EXPECTED_NAME: "test_app-linux${{ matrix.expected-suffix }}"
         run: |
-          test -f "tests/fixtures/flutter/dist/test_app-linux.tar.gz"
-          tar -tzf "tests/fixtures/flutter/dist/test_app-linux.tar.gz" > /dev/null
-          if [ "${{ steps.build-app.outputs.artifact-name }}" != "test_app-linux" ]; then
-            echo "Expected artifact-name 'test_app-linux', got '${{ steps.build-app.outputs.artifact-name }}'"
+          test -f "tests/fixtures/flutter/dist/${EXPECTED_NAME}.tar.gz"
+          tar -tzf "tests/fixtures/flutter/dist/${EXPECTED_NAME}.tar.gz" > /dev/null
+          if [ "${{ steps.build-app.outputs.artifact-name }}" != "$EXPECTED_NAME" ]; then
+            echo "Expected artifact-name '$EXPECTED_NAME', got '${{ steps.build-app.outputs.artifact-name }}'"
             exit 1
           fi
           if [ "${{ steps.build-app.outputs.artifact-path }}" != "tests/fixtures/flutter/dist/*" ]; then
             echo "Expected artifact-path 'tests/fixtures/flutter/dist/*', got '${{ steps.build-app.outputs.artifact-path }}'"
             exit 1
           fi
-          echo "Verified test_app-linux.tar.gz exists, is valid tarball, and outputs match"
