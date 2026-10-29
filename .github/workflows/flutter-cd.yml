@@ -21,11 +21,6 @@ on:
         required: false
         type: string
         default: "."
-      android-format:
-        description: "Android artifact format: apk, aab, or both"
-        required: false
-        type: string
-        default: "apk"
     secrets:
       token:
         description: "GitHub token with contents:write permission (defaults to github.token)"
@@ -73,7 +68,6 @@ jobs:
           target: ${{ matrix.target }}
           flutter-version: ${{ inputs.flutter-version }}
           working-directory: ${{ inputs.working-directory }}
-          android-format: ${{ inputs.android-format }}
       - name: Upload binary to release
         uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2.11.5
         with:

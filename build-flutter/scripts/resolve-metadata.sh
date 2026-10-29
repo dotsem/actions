@@ -2,7 +2,7 @@
 set -euo pipefail
 
 case "$TARGET" in
-  linux|macos|windows|android|ios) ;;
+  linux|macos|windows|android-apk|android-aab|ios) ;;
   *)
     echo "::error::Unsupported build target: $TARGET"
     exit 1

@@ -3,7 +3,7 @@ description: "Sets up Flutter, resolves metadata from pubspec.yaml, installs tar
 
 inputs:
   target:
-    description: "Target platform to build: linux, macos, windows, android, or ios"
+    description: "Target platform to build: linux, macos, windows, android-apk, android-aab, or ios"
     required: true
   flutter-version:
     description: "Flutter SDK version"
@@ -21,10 +21,6 @@ inputs:
     description: "Directory containing pubspec.yaml"
     required: false
     default: "."
-  android-format:
-    description: "Android artifact format: apk, aab, or both"
-    required: false
-    default: "apk"
   build-mode:
     description: "Build mode: debug, profile, or release"
     required: false
@@ -87,17 +83,17 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       run: flutter build windows --${{ inputs.build-mode }}
 
-    - name: Build Android
-      if: inputs.target == 'android'
+    - name: Build Android APK
+      if: inputs.target == 'android-apk'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: |
-        if [ "${{ inputs.android-format }}" = "apk" ] || [ "${{ inputs.android-format }}" = "both" ]; then
-          flutter build apk --${{ inputs.build-mode }}
-        fi
-        if [ "${{ inputs.android-format }}" = "aab" ] || [ "${{ inputs.android-format }}" = "both" ]; then
-          flutter build appbundle --${{ inputs.build-mode }}
-        fi
+      run: flutter build apk --${{ inputs.build-mode }}
+
+    - name: Build Android AAB
+      if: inputs.target == 'android-aab'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: flutter build appbundle --${{ inputs.build-mode }}
 
     - name: Build iOS
       if: inputs.target == 'ios'
@@ -137,10 +133,11 @@ runs:
       run: pwsh "${{ github.action_path }}/scripts/package-windows.ps1"
 
     - name: Package Android
-      if: inputs.target == 'android'
+      if: inputs.target == 'android-apk' || inputs.target == 'android-aab'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       env:
+        TARGET: ${{ inputs.target }}
         BUILD_MODE: ${{ inputs.build-mode }}
         APP_NAME: ${{ env.APP_NAME }}
         MODE_SUFFIX: ${{ env.MODE_SUFFIX }}
