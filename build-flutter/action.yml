@@ -25,6 +25,10 @@ inputs:
     description: "Android artifact format: apk, aab, or both"
     required: false
     default: "apk"
+  build-mode:
+    description: "Build mode: debug, profile, or release"
+    required: false
+    default: "release"
 
 outputs:
   artifact-name:
@@ -48,26 +52,10 @@ runs:
       id: meta
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: |
-        case "${{ inputs.target }}" in
-          linux|macos|windows|android|ios) ;;
-          *)
-            echo "::error::Unsupported build target: ${{ inputs.target }}"
-            exit 1
-            ;;
-        esac
-
-        if [ ! -f pubspec.yaml ]; then
-          echo "::error::pubspec.yaml not found in $PWD"
-          exit 1
-        fi
-
-        NAME=$(sed -n "s/^name:[[:space:]]*//p" pubspec.yaml | head -n 1 | tr -d '\r"'\'' ')
-        if [ -z "$NAME" ]; then
-          NAME="app"
-        fi
-        echo "APP_NAME=$NAME" >> "$GITHUB_ENV"
-        echo "app-name=$NAME" >> "$GITHUB_OUTPUT"
+      env:
+        TARGET: ${{ inputs.target }}
+        BUILD_MODE: ${{ inputs.build-mode }}
+      run: bash "${{ github.action_path }}/scripts/resolve-metadata.sh"
 
     - name: Install Linux dependencies
       if: inputs.target == 'linux'
@@ -85,19 +73,19 @@ runs:
       if: inputs.target == 'linux'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: flutter build linux --release
+      run: flutter build linux --${{ inputs.build-mode }}
 
     - name: Build macOS
       if: inputs.target == 'macos'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: flutter build macos --release
+      run: flutter build macos --${{ inputs.build-mode }}
 
     - name: Build Windows
       if: inputs.target == 'windows'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: flutter build windows --release
+      run: flutter build windows --${{ inputs.build-mode }}
 
     - name: Build Android
       if: inputs.target == 'android'
@@ -105,10 +93,10 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       run: |
         if [ "${{ inputs.android-format }}" = "apk" ] || [ "${{ inputs.android-format }}" = "both" ]; then
-          flutter build apk --release
+          flutter build apk --${{ inputs.build-mode }}
         fi
         if [ "${{ inputs.android-format }}" = "aab" ] || [ "${{ inputs.android-format }}" = "both" ]; then
-          flutter build appbundle --release
+          flutter build appbundle --${{ inputs.build-mode }}
         fi
 
     - name: Build iOS
@@ -116,63 +104,56 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       # TODO: support code signing
-      run: flutter build ios --release --no-codesign
+      run: flutter build ios --${{ inputs.build-mode }} --no-codesign
 
     - name: Package Linux
       if: inputs.target == 'linux'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: |
-        mkdir -p dist
-        tar -czf "dist/${APP_NAME}-linux.tar.gz" -C build/linux/x64/release/bundle .
+      env:
+        BUILD_MODE: ${{ inputs.build-mode }}
+        APP_NAME: ${{ env.APP_NAME }}
+        MODE_SUFFIX: ${{ env.MODE_SUFFIX }}
+      run: bash "${{ github.action_path }}/scripts/package-linux.sh"
 
     - name: Package macOS
       if: inputs.target == 'macos'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: |
-        mkdir -p dist
-        APP_PATH=$(find build/macos/Build/Products/Release -maxdepth 1 -name "*.app" | head -n 1)
-        if [ -z "$APP_PATH" ]; then
-          echo "error: macos .app bundle not found"
-          exit 1
-        fi
-        ditto -c -k --sequesterRsrc "$APP_PATH" "dist/${APP_NAME}-macos.zip"
+      env:
+        BUILD_MODE: ${{ inputs.build-mode }}
+        APP_NAME: ${{ env.APP_NAME }}
+        MODE_SUFFIX: ${{ env.MODE_SUFFIX }}
+      run: bash "${{ github.action_path }}/scripts/package-macos.sh"
 
     - name: Package Windows
       if: inputs.target == 'windows'
       shell: pwsh
       working-directory: ${{ inputs.working-directory }}
-      run: |
-        New-Item -ItemType Directory -Force -Path dist | Out-Null
-        Compress-Archive -Path "build/windows/x64/runner/Release/*" -DestinationPath "dist/${env:APP_NAME}-windows.zip" -Force
+      env:
+        BUILD_MODE: ${{ inputs.build-mode }}
+        APP_NAME: ${{ env.APP_NAME }}
+        MODE_SUFFIX: ${{ env.MODE_SUFFIX }}
+      run: pwsh "${{ github.action_path }}/scripts/package-windows.ps1"
 
     - name: Package Android
       if: inputs.target == 'android'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: |
-        mkdir -p dist
-        APK_FILE=$(find build/app/outputs/flutter-apk -maxdepth 1 -name "*release*.apk" | head -n 1)
-        if [ -n "$APK_FILE" ]; then
-          cp "$APK_FILE" "dist/${APP_NAME}-android.apk"
-        fi
-        AAB_FILE=$(find build/app/outputs/bundle -name "*.aab" | head -n 1)
-        if [ -n "$AAB_FILE" ]; then
-          cp "$AAB_FILE" "dist/${APP_NAME}-android.aab"
-        fi
+      env:
+        BUILD_MODE: ${{ inputs.build-mode }}
+        APP_NAME: ${{ env.APP_NAME }}
+        MODE_SUFFIX: ${{ env.MODE_SUFFIX }}
+      run: bash "${{ github.action_path }}/scripts/package-android.sh"
 
     - name: Package iOS
       if: inputs.target == 'ios'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: |
-        mkdir -p dist
-        if [ ! -d "build/ios/iphoneos/Runner.app" ]; then
-          echo "error: ios Runner.app bundle not found"
-          exit 1
-        fi
-        ditto -c -k --sequesterRsrc "build/ios/iphoneos/Runner.app" "dist/${APP_NAME}-ios-unsigned.zip"
+      env:
+        APP_NAME: ${{ env.APP_NAME }}
+        MODE_SUFFIX: ${{ env.MODE_SUFFIX }}
+      run: bash "${{ github.action_path }}/scripts/package-ios.sh"
 
     - name: Set artifact outputs
       id: package-meta
@@ -183,5 +164,5 @@ runs:
           echo "::error::Packaging produced no artifacts in dist/"
           exit 1
         fi
-        echo "artifact-name=${APP_NAME}-${{ inputs.target }}" >> "$GITHUB_OUTPUT"
+        echo "artifact-name=${APP_NAME}-${{ inputs.target }}${MODE_SUFFIX}" >> "$GITHUB_OUTPUT"
         echo "artifact-path=${{ inputs.working-directory }}/dist/*" >> "$GITHUB_OUTPUT"
