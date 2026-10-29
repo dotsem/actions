@@ -9,7 +9,7 @@ mkdir -p dist
 
 APP_PATH=""
 if [ -d "build/macos/Build/Products" ]; then
-  APP_PATH=$(find "build/macos/Build/Products" -maxdepth 2 -iname "*${BUILD_MODE}*" -name "*.app" | head -n 1)
+  APP_PATH=$(find "build/macos/Build/Products" -maxdepth 2 -ipath "*${BUILD_MODE}*/*.app" | head -n 1)
 fi
 
 if [ -z "$APP_PATH" ]; then
