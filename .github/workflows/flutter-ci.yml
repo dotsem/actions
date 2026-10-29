@@ -99,6 +99,13 @@ jobs:
             fi
           fi
 
+          VALID_TARGETS='["linux", "macos", "windows", "android-apk", "android-aab", "ios"]'
+          INVALID=$(echo "$TARGETS_JSON" | jq --argjson valid "$VALID_TARGETS" -c '[.[] | select(. as $t | $valid | index($t) | not)]')
+          if [ "$INVALID" != "[]" ]; then
+            echo "::error::Unsupported target(s) found: $INVALID. Allowed targets: $VALID_TARGETS"
+            exit 1
+          fi
+
           echo "build-mode=$BUILD_MODE" >> "$GITHUB_OUTPUT"
           echo "matrix=$(echo "$TARGETS_JSON" | jq -c '[.[] | {target: ., os: (if . == "windows" then "windows-latest" elif . == "macos" or . == "ios" then "macos-latest" else "ubuntu-latest" end)}]')" >> "$GITHUB_OUTPUT"
 
