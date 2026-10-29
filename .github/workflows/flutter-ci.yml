@@ -37,7 +37,17 @@ on:
         description: "Build mode: debug, profile, or release"
         required: false
         type: string
-        default: "release"
+        default: ""
+      pr-build-mode:
+        description: "Build mode for pull requests"
+        required: false
+        type: string
+        default: ""
+      push-build-mode:
+        description: "Build mode for push events"
+        required: false
+        type: string
+        default: ""
       concurrency-tests:
         description: "Concurrency level for flutter test"
         required: false
@@ -50,6 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      build-mode: ${{ steps.set-matrix.outputs.build-mode }}
     steps:
       - id: set-matrix
         shell: bash
@@ -58,6 +69,9 @@ jobs:
           PR_TARGETS_INPUT: ${{ inputs.pr-targets }}
           PUSH_TARGETS_INPUT: ${{ inputs.push-targets }}
           EVENT_NAME: ${{ github.event_name }}
+          BUILD_MODE_INPUT: ${{ inputs.build-mode }}
+          PR_BUILD_MODE_INPUT: ${{ inputs.pr-build-mode }}
+          PUSH_BUILD_MODE_INPUT: ${{ inputs.push-build-mode }}
         run: |
           TARGETS_JSON="$TARGETS_INPUT"
           if [ -z "$TARGETS_JSON" ]; then
@@ -73,6 +87,24 @@ jobs:
             exit 1
           fi
 
+          BUILD_MODE="$BUILD_MODE_INPUT"
+          if [ -z "$BUILD_MODE" ]; then
+            if [ "$EVENT_NAME" = "pull_request" ]; then
+              BUILD_MODE="$PR_BUILD_MODE_INPUT"
+            else
+              BUILD_MODE="$PUSH_BUILD_MODE_INPUT"
+            fi
+          fi
+
+          if [ -z "$BUILD_MODE" ]; then
+            if [ "$EVENT_NAME" = "pull_request" ]; then
+              BUILD_MODE="debug"
+            else
+              BUILD_MODE="release"
+            fi
+          fi
+
+          echo "build-mode=$BUILD_MODE" >> "$GITHUB_OUTPUT"
           echo "matrix=$(echo "$TARGETS_JSON" | jq -c '[.[] | {target: ., os: (if . == "windows" then "windows-latest" elif . == "macos" or . == "ios" then "macos-latest" else "ubuntu-latest" end)}]')" >> "$GITHUB_OUTPUT"
 
   analyze:
@@ -106,7 +138,7 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
 
   build:
-    name: Build (${{ matrix.target }})
+    name: Build (${{ matrix.target }} - ${{ needs.setup-matrix.outputs.build-mode }})
     needs: [setup-matrix, analyze, test]
     runs-on: ${{ matrix.os }}
     strategy:
@@ -124,7 +156,7 @@ jobs:
           flutter-version: ${{ inputs.flutter-version }}
           working-directory: ${{ inputs.working-directory }}
           android-format: ${{ inputs.android-format }}
-          build-mode: ${{ inputs.build-mode }}
+          build-mode: ${{ needs.setup-matrix.outputs.build-mode }}
       - name: Upload build artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
