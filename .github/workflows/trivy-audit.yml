@@ -41,16 +41,10 @@ jobs:
           output: "trivy.sarif"
           severity: ${{ inputs.severity }}
 
-      - name: Checkout dotsem/actions
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: always() && hashFiles('trivy.sarif') != ''
-        with:
-          repository: dotsem/actions
-          ref: main
-          path: .dotsem-actions
-
       - name: Report Trivy Results
-        uses: ./.dotsem-actions/security-report
+        # @main is rewritten to the exact release tag by internal-release.yml
+        # nosemgrep: yaml.github-actions.security.unpinned-action.unpinned-action
+        uses: dotsem/actions/security-report@main
         if: always() && hashFiles('trivy.sarif') != ''
         with:
           title: "Trivy Vulnerability Report"
