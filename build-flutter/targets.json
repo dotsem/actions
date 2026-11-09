@@ -1,0 +1,8 @@
+{
+    "linux": "ubuntu-latest",
+    "macos": "macos-latest",
+    "windows": "windows-latest",
+    "android-apk": "ubuntu-latest",
+    "android-aab": "ubuntu-latest",
+    "ios": "macos-latest"
+}

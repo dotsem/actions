@@ -1,0 +1,36 @@
+name: "Setup Flutter"
+description: "Installs the Flutter SDK (version from input or pubspec.yaml environment.flutter) and runs flutter pub get."
+
+inputs:
+  flutter-version:
+    description: "Flutter SDK version. Empty reads environment.flutter from <working-directory>/pubspec.yaml"
+    required: false
+    default: ""
+  channel:
+    description: "Flutter channel"
+    required: false
+    default: "stable"
+  cache:
+    description: "Whether to cache Flutter SDK artifacts"
+    required: false
+    default: "true"
+  working-directory:
+    description: "Directory containing pubspec.yaml"
+    required: false
+    default: "."
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Flutter
+      uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+      with:
+        flutter-version: ${{ inputs.flutter-version }}
+        flutter-version-file: ${{ inputs.flutter-version == '' && format('{0}/pubspec.yaml', inputs.working-directory) || '' }}
+        channel: ${{ inputs.channel }}
+        cache: ${{ inputs.cache == 'true' }}
+
+    - name: Install Dart dependencies
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: flutter pub get

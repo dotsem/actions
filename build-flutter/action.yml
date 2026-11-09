@@ -6,9 +6,9 @@ inputs:
     description: "Target platform to build: linux, macos, windows, android-apk, android-aab, or ios"
     required: true
   flutter-version:
-    description: "Flutter SDK version"
+    description: "Flutter SDK version. Empty reads environment.flutter from <working-directory>/pubspec.yaml"
     required: false
-    default: "3.47.1"
+    default: ""
   channel:
     description: "Flutter channel"
     required: false
@@ -41,6 +41,7 @@ runs:
       uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
       with:
         flutter-version: ${{ inputs.flutter-version }}
+        flutter-version-file: ${{ inputs.flutter-version == '' && format('{0}/pubspec.yaml', inputs.working-directory) || '' }}
         channel: ${{ inputs.channel }}
         cache: ${{ inputs.cache == 'true' }}
 

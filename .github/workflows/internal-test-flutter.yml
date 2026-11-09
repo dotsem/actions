@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "build-flutter/**"
+      - "setup-flutter/**"
+      - "flutter-matrix/**"
       - ".github/workflows/flutter-*.yml"
       - ".github/workflows/internal-test-flutter.yml"
       - "tests/fixtures/flutter/**"
@@ -11,6 +13,8 @@ on:
     branches: [main]
     paths:
       - "build-flutter/**"
+      - "setup-flutter/**"
+      - "flutter-matrix/**"
       - ".github/workflows/flutter-*.yml"
       - ".github/workflows/internal-test-flutter.yml"
       - "tests/fixtures/flutter/**"
@@ -56,5 +60,50 @@ jobs:
           fi
           if [ "${{ steps.build-app.outputs.artifact-path }}" != "tests/fixtures/flutter/dist/*" ]; then
             echo "Expected artifact-path 'tests/fixtures/flutter/dist/*', got '${{ steps.build-app.outputs.artifact-path }}'"
+            exit 1
+          fi
+
+  test-flutter-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Resolve valid matrix
+        id: valid
+        uses: ./flutter-matrix
+        with:
+          targets: '["linux", "ios", "windows"]'
+          build-mode: "profile"
+
+      - name: Assert valid matrix
+        shell: bash
+        env:
+          MATRIX: ${{ steps.valid.outputs.matrix }}
+          BUILD_MODE: ${{ steps.valid.outputs.build-mode }}
+        run: |
+          EXPECTED='[{"target":"linux","os":"ubuntu-latest"},{"target":"ios","os":"macos-latest"},{"target":"windows","os":"windows-latest"}]'
+          if [ "$MATRIX" != "$EXPECTED" ]; then
+            echo "Expected matrix $EXPECTED, got $MATRIX"
+            exit 1
+          fi
+          if [ "$BUILD_MODE" != "profile" ]; then
+            echo "Expected build-mode 'profile', got '$BUILD_MODE'"
+            exit 1
+          fi
+
+      - name: Resolve invalid matrix
+        id: invalid
+        continue-on-error: true
+        uses: ./flutter-matrix
+        with:
+          targets: '["linux", "bogus"]'
+
+      - name: Assert invalid matrix failed
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.invalid.outcome }}
+        run: |
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "Expected invalid target to fail, got outcome '$OUTCOME'"
             exit 1
           fi
