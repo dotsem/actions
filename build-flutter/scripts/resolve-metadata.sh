@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-case "$TARGET" in
-  linux|macos|windows|android-apk|android-aab|ios) ;;
-  *)
-    echo "::error::Unsupported build target: $TARGET"
-    exit 1
-    ;;
-esac
+TARGETS_FILE="${TARGETS_FILE:-${GITHUB_ACTION_PATH}/targets.json}"
+if ! jq -e --arg t "$TARGET" 'has($t)' "$TARGETS_FILE" > /dev/null; then
+  echo "::error::Unsupported build target: $TARGET. Allowed targets: $(jq -c 'keys_unsorted' "$TARGETS_FILE")"
+  exit 1
+fi
 
 case "$BUILD_MODE" in
   debug|profile|release) ;;

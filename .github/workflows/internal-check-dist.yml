@@ -32,9 +32,11 @@ jobs:
       - name: Compare expected and actual dist/ directories
         id: diff
         run: |
-          if [ "$(git diff --ignore-space-at-eol **/dist/ | wc -l)" -gt "0" ]; then
+          # status (not diff) so new untracked files in dist/ are caught too
+          if [ -n "$(git status --porcelain -- ':(glob)**/dist/**')" ]; then
             echo "::error::Detected uncommitted changes after pnpm build. Run 'pnpm build' locally and commit the result."
-            git diff
+            git status --porcelain -- ':(glob)**/dist/**'
+            git --no-pager diff -- ':(glob)**/dist/**'
             exit 1
           fi
 

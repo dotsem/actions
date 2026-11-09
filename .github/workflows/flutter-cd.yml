@@ -12,10 +12,10 @@ on:
         required: false
         type: string
       flutter-version:
-        description: "Flutter SDK version"
+        description: "Flutter SDK version (empty reads environment.flutter from pubspec.yaml)"
         required: false
         type: string
-        default: "3.47.1"
+        default: ""
       working-directory:
         description: "Working directory containing pubspec.yaml"
         required: false
@@ -28,7 +28,7 @@ on:
 
 concurrency:
   group: flutter-cd-${{ inputs.tag || github.event.release.tag_name || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   setup-matrix:
@@ -38,23 +38,11 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - id: set-matrix
-        shell: bash
-        env:
-          TARGETS_INPUT: ${{ inputs.targets }}
-        run: |
-          if [ -z "$TARGETS_INPUT" ]; then
-            echo "::error::Input 'targets' must not be empty"
-            exit 1
-          fi
-
-          VALID_TARGETS='["linux", "macos", "windows", "android-apk", "android-aab", "ios"]'
-          INVALID=$(echo "$TARGETS_INPUT" | jq --argjson valid "$VALID_TARGETS" -c '[.[] | select(. as $t | $valid | index($t) | not)]')
-          if [ "$INVALID" != "[]" ]; then
-            echo "::error::Unsupported target(s) found: $INVALID. Allowed targets: $VALID_TARGETS"
-            exit 1
-          fi
-
-          echo "matrix=$(echo "$TARGETS_INPUT" | jq -c '[.[] | {target: ., os: (if . == "windows" then "windows-latest" elif . == "macos" or . == "ios" then "macos-latest" else "ubuntu-latest" end)}]')" >> "$GITHUB_OUTPUT"
+        # @main is rewritten to the exact release tag by internal-release.yml
+        # nosemgrep: yaml.github-actions.security.unpinned-action.unpinned-action
+        uses: dotsem/actions/flutter-matrix@main
+        with:
+          targets: ${{ inputs.targets }}
 
   build:
     name: Build & Upload (${{ matrix.target }})
@@ -70,8 +58,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Build App
         id: build
+        # @main is rewritten to the exact release tag by internal-release.yml
         # nosemgrep: yaml.github-actions.security.unpinned-action.unpinned-action
-        uses: dotsem/actions/build-flutter@v0
+        uses: dotsem/actions/build-flutter@main
         with:
           target: ${{ matrix.target }}
           flutter-version: ${{ inputs.flutter-version }}

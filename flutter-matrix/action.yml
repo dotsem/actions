@@ -1,0 +1,52 @@
+name: "Flutter Matrix"
+description: "Validates Flutter build targets and resolves a job matrix (target + runner OS) and build mode for the current event."
+
+inputs:
+  targets:
+    description: "JSON array of targets for all events (overrides pr-targets / push-targets)"
+    required: false
+    default: ""
+  pr-targets:
+    description: "JSON array of targets on pull_request"
+    required: false
+    default: ""
+  push-targets:
+    description: "JSON array of targets on push / other events"
+    required: false
+    default: ""
+  build-mode:
+    description: "Build mode for all events (overrides pr-build-mode / push-build-mode)"
+    required: false
+    default: ""
+  pr-build-mode:
+    description: "Build mode on pull_request (defaults to debug)"
+    required: false
+    default: ""
+  push-build-mode:
+    description: "Build mode on push / other events (defaults to release)"
+    required: false
+    default: ""
+
+outputs:
+  matrix:
+    description: "JSON array of {target, os} objects for strategy.matrix.include"
+    value: ${{ steps.resolve.outputs.matrix }}
+  build-mode:
+    description: "Resolved build mode"
+    value: ${{ steps.resolve.outputs.build-mode }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Resolve matrix
+      id: resolve
+      shell: bash
+      env:
+        TARGETS_INPUT: ${{ inputs.targets }}
+        PR_TARGETS_INPUT: ${{ inputs.pr-targets }}
+        PUSH_TARGETS_INPUT: ${{ inputs.push-targets }}
+        BUILD_MODE_INPUT: ${{ inputs.build-mode }}
+        PR_BUILD_MODE_INPUT: ${{ inputs.pr-build-mode }}
+        PUSH_BUILD_MODE_INPUT: ${{ inputs.push-build-mode }}
+        EVENT_NAME: ${{ github.event_name }}
+      run: bash "${{ github.action_path }}/scripts/resolve-matrix.sh"
