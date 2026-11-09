@@ -44,7 +44,7 @@ jobs:
       - name: Report Trivy Results
         # @main is rewritten to the exact release tag by internal-release.yml
         # nosemgrep: yaml.github-actions.security.unpinned-action.unpinned-action
-        uses: dotsem/actions/security-report@main
+        uses: dotsem/actions/security-report@v0.5.0
         if: always() && hashFiles('trivy.sarif') != ''
         with:
           title: "Trivy Vulnerability Report"

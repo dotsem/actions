@@ -1,7 +1,7 @@
 name: Release
 
 # Cuts a release from main:
-#   1. rewrites every self-reference (dotsem/actions/...@main) to @v<version> in a release commit
+#   1. rewrites every self-reference (dotsem/actions/...@v0.5.0) to @v<version> in a release commit
 #   2. tags that commit v<version> and publishes a GitHub release with generated notes
 #   3. moves the floating tags (v<major>, and v0.<minor> during 0.x) to it, unless it's a pre-release
 # main itself is never modified, so it keeps @main.
