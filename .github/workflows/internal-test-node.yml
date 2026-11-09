@@ -1,0 +1,66 @@
+name: Test Node Actions
+
+on:
+  pull_request:
+    paths:
+      - "build-node/**"
+      - "setup-node/**"
+      - ".github/workflows/internal-test-node.yml"
+      - "tests/fixtures/node/**"
+  push:
+    branches: [main]
+    paths:
+      - "build-node/**"
+      - "setup-node/**"
+      - ".github/workflows/internal-test-node.yml"
+      - "tests/fixtures/node/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-node-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  test-node-actions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Test setup-node
+        uses: ./setup-node
+        with:
+          working-directory: tests/fixtures/node
+
+      - name: Assert toolchain versions
+        shell: bash
+        run: |
+          # Node: setup-node default; pnpm: fixture's packageManager field
+          [[ "$(node -v)" == v24.* ]] || { echo "Expected Node 24, got $(node -v)"; exit 1; }
+          EXPECTED_PNPM=$(jq -r '.packageManager | sub("^pnpm@"; "") | sub("\\+.*$"; "")' tests/fixtures/node/package.json)
+          [ "$(pnpm -v)" = "$EXPECTED_PNPM" ] || { echo "Expected pnpm $EXPECTED_PNPM (from packageManager), got $(pnpm -v)"; exit 1; }
+
+      - name: Test build-node
+        uses: ./build-node
+        with:
+          working-directory: tests/fixtures/node
+
+      - name: Assert no args by default
+        shell: bash
+        run: |
+          ACTUAL=$(cat tests/fixtures/node/build-args.json)
+          [ "$ACTUAL" = '[]' ] || { echo "Expected [], got $ACTUAL"; exit 1; }
+
+      - name: Test build-node with args
+        uses: ./build-node
+        with:
+          working-directory: tests/fixtures/node
+          args: "--foo --bar=baz"
+
+      - name: Assert args were split
+        shell: bash
+        run: |
+          ACTUAL=$(cat tests/fixtures/node/build-args.json)
+          [ "$ACTUAL" = '["--foo","--bar=baz"]' ] || { echo "Expected [\"--foo\",\"--bar=baz\"], got $ACTUAL"; exit 1; }
