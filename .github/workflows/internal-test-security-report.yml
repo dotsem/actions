@@ -1,0 +1,72 @@
+name: Test Security Report
+
+on:
+  pull_request:
+    paths:
+      - "security-report/**"
+      - "tests/fixtures/*.sarif"
+      - ".github/workflows/internal-test-security-report.yml"
+  push:
+    branches: [main]
+    paths:
+      - "security-report/**"
+      - "tests/fixtures/*.sarif"
+      - ".github/workflows/internal-test-security-report.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-security-report-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  test-security-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # First test if a clean report with no findings works as expected
+      - name: Run security-report with clean fixture
+        id: report-clean
+        uses: ./security-report
+        with:
+          title: "Clean Security Report"
+          sarif-file: "tests/fixtures/clean.sarif"
+          comment-tag: "test-clean"
+          fail-on-findings: "true"
+
+      - name: Assert clean outputs
+        shell: bash
+        env:
+          TOTAL: ${{ steps.report-clean.outputs.total-findings }}
+          REPORT_FILE: ${{ steps.report-clean.outputs.report-file }}
+        run: |
+          if [ "$TOTAL" -ne 0 ]; then
+            echo "Expected 0 findings, got $TOTAL"
+            exit 1
+          fi
+          grep -q "Passed ✅" "$REPORT_FILE"
+
+      # Then test if a report with vulns is working
+      - name: Run security-report with dirty fixture
+        id: report-dirty
+        uses: ./security-report
+        with:
+          title: "Dirty Security Report"
+          sarif-file: "tests/fixtures/dirty.sarif"
+          comment-tag: "test-report"
+          fail-on-findings: "false"
+
+      - name: Assert dirty outputs
+        shell: bash
+        env:
+          TOTAL: ${{ steps.report-dirty.outputs.total-findings }}
+          REPORT_FILE: ${{ steps.report-dirty.outputs.report-file }}
+        run: |
+          if [ "$TOTAL" -ne 2 ]; then
+            echo "Expected 2 findings, got $TOTAL"
+            exit 1
+          fi
+          test -f "$REPORT_FILE"
