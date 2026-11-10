@@ -39,7 +39,7 @@ jobs:
     steps:
       - id: set-matrix
         # @main is rewritten to the exact release tag by internal-release.yml
-        # nosemgrep: yaml.github-actions.security.unpinned-action.unpinned-action
+        # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
         uses: dotsem/actions/flutter-matrix@main
         with:
           targets: ${{ inputs.targets }}
@@ -59,7 +59,7 @@ jobs:
       - name: Build App
         id: build
         # @main is rewritten to the exact release tag by internal-release.yml
-        # nosemgrep: yaml.github-actions.security.unpinned-action.unpinned-action
+        # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
         uses: dotsem/actions/build-flutter@main
         with:
           target: ${{ matrix.target }}
