@@ -70,19 +70,25 @@ runs:
       if: inputs.target == 'linux'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: flutter build linux --${{ inputs.build-mode }}
+      env:
+        BUILD_MODE: ${{ inputs.build-mode }}
+      run: flutter build linux "--$BUILD_MODE"
 
     - name: Build macOS
       if: inputs.target == 'macos'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: flutter build macos --${{ inputs.build-mode }}
+      env:
+        BUILD_MODE: ${{ inputs.build-mode }}
+      run: flutter build macos "--$BUILD_MODE"
 
     - name: Build Windows
       if: inputs.target == 'windows'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: flutter build windows --${{ inputs.build-mode }}
+      env:
+        BUILD_MODE: ${{ inputs.build-mode }}
+      run: flutter build windows "--$BUILD_MODE"
 
     - name: Set up Gradle Cache
       if: (inputs.target == 'android-apk' || inputs.target == 'android-aab') && inputs.cache == 'true'
@@ -94,20 +100,26 @@ runs:
       if: inputs.target == 'android-apk'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: flutter build apk --${{ inputs.build-mode }}
+      env:
+        BUILD_MODE: ${{ inputs.build-mode }}
+      run: flutter build apk "--$BUILD_MODE"
 
     - name: Build Android AAB
       if: inputs.target == 'android-aab'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: flutter build appbundle --${{ inputs.build-mode }}
+      env:
+        BUILD_MODE: ${{ inputs.build-mode }}
+      run: flutter build appbundle "--$BUILD_MODE"
 
     - name: Build iOS
       if: inputs.target == 'ios'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       # TODO: support code signing
-      run: flutter build ios --${{ inputs.build-mode }} --no-codesign
+      env:
+        BUILD_MODE: ${{ inputs.build-mode }}
+      run: flutter build ios "--$BUILD_MODE" --no-codesign
 
     - name: Package Linux
       if: inputs.target == 'linux'
@@ -163,10 +175,13 @@ runs:
       id: package-meta
       shell: bash
       working-directory: ${{ inputs.working-directory }}
+      env:
+        TARGET: ${{ inputs.target }}
+        WORKING_DIRECTORY: ${{ inputs.working-directory }}
       run: |
         if [ ! -d "dist" ] || [ -z "$(ls -A dist 2>/dev/null)" ]; then
           echo "::error::Packaging produced no artifacts in dist/"
           exit 1
         fi
-        echo "artifact-name=${APP_NAME}-${{ inputs.target }}${MODE_SUFFIX}" >> "$GITHUB_OUTPUT"
-        echo "artifact-path=${{ inputs.working-directory }}/dist/*" >> "$GITHUB_OUTPUT"
+        echo "artifact-name=${APP_NAME}-${TARGET}${MODE_SUFFIX}" >> "$GITHUB_OUTPUT"
+        echo "artifact-path=${WORKING_DIRECTORY}/dist/*" >> "$GITHUB_OUTPUT"

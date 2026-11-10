@@ -43,7 +43,7 @@ jobs:
 
       - name: Report Trivy Results
         # @main is rewritten to the exact release tag by internal-release.yml
-        # nosemgrep: yaml.github-actions.security.unpinned-action.unpinned-action
+        # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
         uses: dotsem/actions/security-report@main
         if: always() && hashFiles('trivy.sarif') != ''
         with:

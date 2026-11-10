@@ -59,7 +59,7 @@ jobs:
     steps:
       - id: set-matrix
         # @main is rewritten to the exact release tag by internal-release.yml
-        # nosemgrep: yaml.github-actions.security.unpinned-action.unpinned-action
+        # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
         uses: dotsem/actions/flutter-matrix@main
         with:
           targets: ${{ inputs.targets }}
@@ -76,7 +76,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup Flutter
         # @main is rewritten to the exact release tag by internal-release.yml
-        # nosemgrep: yaml.github-actions.security.unpinned-action.unpinned-action
+        # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
         uses: dotsem/actions/setup-flutter@main
         with:
           flutter-version: ${{ inputs.flutter-version }}
@@ -91,13 +91,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup Flutter
         # @main is rewritten to the exact release tag by internal-release.yml
-        # nosemgrep: yaml.github-actions.security.unpinned-action.unpinned-action
+        # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
         uses: dotsem/actions/setup-flutter@main
         with:
           flutter-version: ${{ inputs.flutter-version }}
           working-directory: ${{ inputs.working-directory }}
-      - run: flutter test --concurrency=${{ inputs.concurrency-tests }}
+      - run: flutter test "--concurrency=$CONCURRENCY"
         working-directory: ${{ inputs.working-directory }}
+        env:
+          CONCURRENCY: ${{ inputs.concurrency-tests }}
 
   build:
     name: Build (${{ matrix.target }} - ${{ needs.setup-matrix.outputs.build-mode }})
@@ -112,7 +114,7 @@ jobs:
       - name: Build App
         id: build
         # @main is rewritten to the exact release tag by internal-release.yml
-        # nosemgrep: yaml.github-actions.security.unpinned-action.unpinned-action
+        # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
         uses: dotsem/actions/build-flutter@main
         with:
           target: ${{ matrix.target }}
