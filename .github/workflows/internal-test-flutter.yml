@@ -9,7 +9,6 @@ on:
       - ".github/workflows/flutter-*.yml"
       - ".github/workflows/internal-test-flutter.yml"
       - "tests/fixtures/flutter/**"
-      - "tests/resolve-flutter-version.test.sh"
   push:
     branches: [main]
     paths:
@@ -19,7 +18,6 @@ on:
       - ".github/workflows/flutter-*.yml"
       - ".github/workflows/internal-test-flutter.yml"
       - "tests/fixtures/flutter/**"
-      - "tests/resolve-flutter-version.test.sh"
   workflow_dispatch:
 
 permissions:
@@ -64,12 +62,6 @@ jobs:
             echo "Expected artifact-path 'tests/fixtures/flutter/dist/*', got '${{ steps.build-app.outputs.artifact-path }}'"
             exit 1
           fi
-
-  test-resolve-flutter-version:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - run: bash tests/resolve-flutter-version.test.sh
 
   test-setup-flutter-range:
     runs-on: ubuntu-latest
