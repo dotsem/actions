@@ -40,7 +40,7 @@ jobs:
       - id: set-matrix
         # @main is rewritten to the exact release tag by internal-release.yml
         # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
-        uses: dotsem/actions/flutter-matrix@main
+        uses: dotsem/actions/flutter-matrix@v0.5.2
         with:
           targets: ${{ inputs.targets }}
 
@@ -60,7 +60,7 @@ jobs:
         id: build
         # @main is rewritten to the exact release tag by internal-release.yml
         # nosemgrep: yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag
-        uses: dotsem/actions/build-flutter@main
+        uses: dotsem/actions/build-flutter@v0.5.2
         with:
           target: ${{ matrix.target }}
           flutter-version: ${{ inputs.flutter-version }}
