@@ -1,5 +1,8 @@
 # Shared actions
 
+> [!WARNING]
+> This repo is being replaced in favor of the [dotactions](https://github.com/orgs/dotactions) organization. This org splits all actions/workflows per language to keep versioning simpler & increase maintainability. **This repo will be archived soon**
+
 ## Versioning
 
 Pin a **full commit SHA** of a release tag (most secure, Semgrep standard), with the version in a comment:
